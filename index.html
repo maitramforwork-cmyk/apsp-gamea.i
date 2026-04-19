@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ Sơ Trinh Thám: Hybrid Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0f15;
+            --panel-bg: #1c1e2d;
+            --accent: #d81b60;
+            --accent-hover: #f06292;
+            --text: #e0e0e0;
+            --text-muted: #90a4ae;
+            --clue-unlocked: #4caf50;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            padding: 20px;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+
+        /* PANEL TRÁI: THẨM VẤN */
+        .interrogation-panel {
+            flex: 2;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #2e324a;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .suspect-header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: #131522;
+            border-bottom: 2px solid #2e324a;
+        }
+
+        .suspect-avatar {
+            font-size: 50px;
+            background: #25283e;
+            border-radius: 50%;
+            height: 70px;
+            width: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            border: 2px solid var(--accent);
+        }
+
+        .suspect-info h2 { margin: 0 0 5px 0; color: #fff; transition: 0.3s;}
+        .suspect-info .status { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; transition: color 0.5s; }
+
+        .chat-history {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+            white-space: pre-wrap;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-npc { align-self: flex-start; background-color: #2a2d42; color: #f5f5f5; border-top-left-radius: 0; }
+        .msg-player { align-self: flex-end; background-color: #3949ab; color: white; border-bottom-right-radius: 0; }
+        .typing-indicator { font-style: italic; color: #aaa; background: none !important; margin-bottom: 0 !important;}
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: #131522;
+            border-top: 1px solid #2e324a;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 15px;
+            background-color: #0d0f15;
+            border: 1px solid #455a64;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-area input:focus { border-color: #3949ab; }
+        .input-area input:disabled { background-color: #1c1e2d; cursor: not-allowed; }
+
+        .input-area button {
+            background-color: #3949ab;
+            color: white;
+            border: none;
+            padding: 0 25px;
+            margin-left: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .input-area button:hover { background-color: #5c6bc0; }
+        .input-area button:disabled { background-color: #455a64; cursor: not-allowed; }
+
+        /* PANEL PHẢI: SỔ TAY */
+        .notebook-panel {
+            flex: 1;
+            background-color: #fff8e1;
+            color: #3e2723;
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.05);
+            font-family: 'JetBrains Mono', monospace;
+            background-image: repeating-linear-gradient(#fff8e1 0px, #fff8e1 24px, #e0e0e0 25px);
+            line-height: 25px;
+        }
+
+        .notebook-panel h2 {
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            border-bottom: 2px dashed #8d6e63;
+            padding-bottom: 10px;
+            margin-top: 0;
+            color: #5d4037;
+        }
+
+        .mission { font-weight: bold; color: #b71c1c; margin-bottom: 15px; line-height: 1.4; transition: 0.3s;}
+
+        .clue-list { list-style: none; padding: 0; margin: 0; flex: 1; overflow-y: auto;}
+
+        .clue-list li {
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            border-radius: 4px;
+            border: 1px solid dashed;
+            transition: all 0.5s;
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
+
+        .clue-locked { color: #9e9e9e; font-style: italic; }
+        .clue-unlocked {
+            color: #1b5e20; background: rgba(76, 175, 80, 0.1);
+            font-weight: bold; border-left: 4px solid #4caf50;
+            animation: highlightClue 1s ease;
+        }
+
+        @keyframes highlightClue {
+            0% { background: #ffea00; }
+            100% { background: rgba(76, 175, 80, 0.1); }
+        }
+
+        .accuse-btn {
+            background-color: #9e9e9e; color: white; border: none; padding: 15px;
+            font-size: 1.2rem; font-weight: bold; border-radius: 6px; cursor: not-allowed;
+            margin-top: 15px; font-family: 'Inter', sans-serif; transition: all 0.3s;
+        }
+
+        .accuse-btn.active {
+            background-color: var(--accent); cursor: pointer;
+            box-shadow: 0 5px 15px rgba(216, 27, 96, 0.4);
+            animation: pulseBtn 1.5s infinite;
+        }
+
+        @keyframes pulseBtn {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .accuse-btn.active:hover { background-color: var(--accent-hover); }
+
+        /* Overlay Modals */
+        .overlay {
+            display: none; position: fixed; top:0; left:0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal {
+            background: var(--panel-bg); padding: 40px; border-radius: 12px;
+            text-align: center; border: 2px solid var(--accent); width: 600px;
+            box-shadow: 0 0 50px rgba(216, 27, 96, 0.3);
+        }
+        .modal h1 { color: #ffd700; margin-top: 0; }
+        .modal p { color: white; line-height: 1.5; font-size: 1.05rem; margin-bottom: 20px;}
+        
+        .modal input { width: 90%; padding: 15px; margin-top: 5px; font-size: 1.1rem; border-radius: 6px; border: 1px solid #455a64; background: #0d0f15; color: #00e676; letter-spacing: 1px;}
+        .modal input:focus { border-color: #d81b60; outline: none;}
+        
+        .modal button {
+            background: var(--accent); color: white; border: none; padding: 12px 25px;
+            font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top:15px; transition: 0.2s;
+        }
+        .modal button:hover { background: var(--accent-hover); transform: scale(1.02);}
+
+        .btn-offline {
+            background-color: #455a64 !important;
+            margin-top: 10px !important;
+        }
+        .btn-offline:hover {
+            background-color: #78909c !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Chơi trực tiếp không cần Load API Modal -->
+
+    <!-- UI Game Chính -->
+    <div class="container">
+        <!-- Panel Trái -->
+        <div class="interrogation-panel">
+            <div class="suspect-header">
+                <div class="suspect-avatar" id="avatar-emoji">...</div>
+                <div class="suspect-info">
+                    <h2 id="suspect-name">Đang tải...</h2>
+                    <div class="status" id="npc-status">Đang kết nối hệ thống</div>
+                </div>
+            </div>
+
+            <div class="chat-history" id="chat-history">
+                <div class="message msg-npc">Hệ thống đang chờ lệnh...</div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="player-input" placeholder="Đợi kết nối..." disabled autocomplete="off">
+                <button id="send-btn" disabled>HỎI</button>
+            </div>
+        </div>
+
+        <!-- Panel Phải -->
+        <div class="notebook-panel">
+            <h2>HỒ SƠ TUYỆT MẬT</h2>
+            <div class="mission" id="mission-text">Nhiệm Vụ: Ép NPC vòng vo để tìm ra Đòn Quyết Định (Manh mối 5) để tiến hành bắt giữ.</div>
+            
+            <ul class="clue-list" id="clue-list">
+                <li id="clue-1" class="clue-locked">[ ? ] Manh mối 1...</li>
+                <li id="clue-2" class="clue-locked">[ ? ] Manh mối 2...</li>
+                <li id="clue-3" class="clue-locked">[ ? ] Manh mối 3...</li>
+                <li id="clue-4" class="clue-locked">[ ? ] Manh mối 4...</li>
+                <li id="clue-5" class="clue-locked">[ ? ] Manh mối 5...</li>
+            </ul>
+
+            <div style="font-size:0.8rem; color:#795548; font-family:'Inter', sans-serif; margin-top: 15px;">
+                <strong>Gợi ý hướng chất vấn của thám tử:</strong><br>
+                <div id="hint-content">...</div>
+            </div>
+
+            <button id="accuse-btn" class="accuse-btn" disabled>BẮT GIỮ NGHI PHẠM</button>
+        </div>
+    </div>
+
+    <!-- Modal chiến thắng -->
+    <div id="win-overlay" class="overlay">
+        <div class="modal">
+            <h1>THAO TÚNG THÀNH CÔNG!</h1>
+            <p id="win-msg">Bằng sự khéo léo và khả năng gán ghép bằng chứng logic, bạn đã đập tan phòng tuyến tâm lý của kẻ thủ ác. Chúc mừng thám tử!</p>
+            <button id="next-case-btn" onclick="nextCase()">Phá Vụ Án Tiếp Theo</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // THIẾT LẬP DÀNH CHO QUẢN TRỊ VIÊN:
+        // Bạn có thể dán mã API Key của bạn vào trong cặp ngoặc kép ở dưới.
+        // Khi đó hệ thống sẽ tự vô game ngay mà không hiện bảng hỏi lựa chọn ban đầu.
+        // ==========================================
+        let API_KEY = "";
+        
+        // Trạng thái vận hành
+        let IS_OFFLINE_MODE = false;
+        let chatHistoryData = [];
+        let unlockedClues = [];
+        let isTyping = false;
+        let currentCaseIndex = 0;
+
+        // DANH SÁCH CÁC VỤ ÁN SIÊU CẤP (Kết hợp Online vs Offline)
+        const GameCases = [
+            {
+                // CASE 1: NHÂN VIÊN K
+                title: "Hồ Sơ 1: Bản Vẽ Đánh Cắp",
+                suspectName: "Nhân viên K.",
+                avatar: "🧑‍💼",
+                missionText: "VỤ ÁN 1: K. đã trộm tài liệu mật. Bằng mọi giá cạy miệng hắn khai ra Đòn Quyết Định (Manh Mối 5) để kết thúc.",
+                cluePlaceholders: [
+                    "Lịch trình chìa khóa phòng",
+                    "Thông tin mật: Tình trạng Camera",
+                    "Hiện trường bịa đặt (leo cửa sổ)",
+                    "Động cơ: Nợ nần cá độ",
+                    "Chui đầu vào rọ: Thông đồng đối thủ Hưng Thịnh"
+                ],
+                hints: "- Nghi vấn thời điểm đưa chìa khóa cho cô lao công.<br>- Camera ở hành lang.<br>- Nhắc đến lối chui qua cửa sổ.<br>- Vấn đề tiền nong bết bát.<br>- Nhấp nhả về công ty đối thủ Hưng Thịnh.",
+                greeting: "Dạ sáng mới vào sếp gọi em lên phòng có chuyện gì gấp không sếp? Em còn đống hợp đồng.",
+                winMsg: "Tuyệt vời, bạn đã ép bị cáo phơi bày toàn bộ sơ hở cẩu thả trong kế hoạch đánh cắp hồ sơ!",
+                clueReveals: [
+                    "[Bị lật tẩy] Y đã nhầm giờ giao chìa khóa cho lao công!",
+                    "[Cửa sáng] Đã tóm được sự bất thường lộ liễu về mắt camera!",
+                    "[Sai hiện trường] K hoang mang bịa đặt việc trộm bay qua cửa sổ.",
+                    "[Chốt động cơ] K thừa nhận túng quẫn nợ cá độ.",
+                    "[Lộ đối tác] Bí mật giao dịch 'Hưng Thịnh' / Bán tài liệu đã lộ diện."
+                ],
+                systemPrompt: `Bạn đang nhập vai Nhân Viên K làm ở phòng Hành Chính. Bạn bị sếp thẩm vấn vì nghi ngờ ăn cắp hồ sơ mật lúc 6h30 tối qua. Kịch bản: BẠN CHÍNH LÀ THỦ PHẠM.
+Người đang chat là sếp bạn. Thái độ: Lễ phép, nhưng hay cãi cọ, biện minh, nếu bị dọa thì xù lông nhím. Trả lời lươn lẹo, đời thường, tối đa 2-3 câu gọn gàng.
+
+BẠN CÓ 5 BÍ MẬT QUAN TRỌNG. BẠN PHẢI GIẤU KÍN. NHƯNG NẾU BỊ SẾP HỎI HOẶC ÉP ĐƯỢC ĐÚNG TRỌNG TÂM, BẠN PHẢI BỐI RỐI LỘ RA VÀ BẮT BUỘC CHÈN THÊM [CLUE_X] VÀO CUỐI TEXT:
+1. Bạn khai 6h30 gửi chìa khoá lao công. Nếu sếp chất vấn: "5h30 lao công tan ca rồi mà?": Bạn lắp bắp tự bào chữa và CHÈN [CLUE_1].
+2. Bạn mừng rỡ khai camera góc tủ hỏng. Nếu sếp vặn: "Sao nhân viên thường lại biết camera an ninh bị hỏng?": Bạn ấm úng kiếm cớ và CHÈN [CLUE_2].
+3. Bạn đoán trộm leo cửa sổ. Nếu sếp vạch trần: "Phòng giữa toà nhà làm gì có cửa sổ?": Bạn lảng tránh đi chỗ khác và CHÈN [CLUE_3].
+4. Bạn bết bát tài chính. Nếu sếp hỏi dồn: "Nợ nần / Thiếu tiền / Cờ bạc à?": Bạn bực bội thú nhận vỡ nợ cá độ nhưng xin sếp đừng vu khống ăn cắp, rồi CHÈN [CLUE_4].
+5. Bạn tính bán tài liệu giá 50 triệu cho Cty Hưng Thịnh. NẾU SẾP NHÁ HÀNG CHỮ ĐỐI THỦ "HƯNG THỊNH" hay MỐI THU/50 TRIỆU: Bạn giật thót hét lên vạch mưu sếp và tự khai ra mức giá, CẦN CHÈN [CLUE_5].
+
+Tuyệt đối không nhét chữ [CLUE_X] nếu câu chất vấn của sếp chưa đạt chuẩn.`,
+                dictionary: [
+                    { keywords: ["chào", "hello", "hi", "khoẻ", "khỏe"], ans: "Vâng, chào sếp. Mới sáng sớm sếp gọi em có gì gấp không? Đêm qua thức khuya hơi mệt ạ." },
+                    { keywords: ["tài liệu", "hồ sơ", "mất", "đánh cắp", "trộm"], ans: "Hồ sơ dự án á? Mất á? Thật không thể tin nổi! Em cất vào tủ khóa cẩn thận rồi mà sếp." },
+                    { keywords: ["ai lấy", "tại sao", "lý do"], ans: "Em làm sao biết được. Kẻ gian thì sếp phải báo an ninh tự đi điều tra chứ sao bắt ép em." },
+                    { keywords: ["cảnh sát", "công an", "đuổi"], ans: "Sếp cứ mời công an. Em làm ăn lương đàng hoàng, không bằng chứng em kiện ngược lại." },
+                    { 
+                        keywords: ["chìa", "khóa", "chìa khoá", "chìa khóa"], 
+                        ans: "À... chìa khóa phòng thì xong việc em giao cho cô lao công cất giữ lúc 6h30 tối rồi ạ.",
+                        clueId: 1
+                    },
+                    { 
+                        keywords: ["cam", "camera", "cctv", "an ninh", "ghi hình"], 
+                        ans: "Sếp nghi ngờ thì cứ cho người check camera là rõ! Mặc dù sếp thừa biết cái camera góc tủ hồ sơ nó hỏng từ bữa nọ rồi mà.",
+                        clueId: 2
+                    },
+                    { 
+                        keywords: ["về muộn", "cuối cùng", "cửa sổ"], 
+                        ans: "Đúng là em về cuối cùng công ty. Chắc trộm nó bẻ chốt đột nhập đường cửa sổ? Cửa sổ công ty mình lỏng lẻo lắm.",
+                        clueId: 3
+                    },
+                    { 
+                        keywords: ["tiền", "nợ", "lương", "tài chính", "cá độ", "đánh bạc", "vay", "banh bóng"], 
+                        ans: "Thôi được, dạo này em bết bát nợ kèo bóng đá. Nhưng em không túng đến mức đi ăn cắp cty đâu sếp!",
+                        clueId: 4
+                    },
+                    { 
+                        keywords: ["điện thoại", "zalo", "đối thủ", "hưng thịnh", "bán", "liên lạc"], 
+                        ans: "Ai gièm pha với sếp bảo em gọi Zalo cho gã bên Hưng Thịnh thế? Chẳng có chuyện em tuồn bản vẽ bán giá 50 triệu nhé!",
+                        clueId: 5
+                    }
+                ],
+                defaultAnswers: [
+                    "Dạ em chưa hiểu sếp lấp lửng cái gì.",
+                    "Sếp cứ tra khảo em như thám tử Conan thế nhỉ.",
+                    "Đêm qua mất ngủ giờ sếp rầy nãy giờ em thấy ong ong não quá.",
+                    "Hỏi gì nhạt nhẽo vậy sếp?"
+                ]
+            },
+            {
+                // CASE 2: KẾ TOÁN TRƯỞNG
+                title: "Hồ Sơ 2: Cú Đục Két Hoàn Hảo",
+                suspectName: "Kế toán trưởng H.",
+                avatar: "👩‍💼",
+                missionText: "VỤ ÁN 2: 500 triệu quỹ biến mất. Hãy cạy miệng Thủ phạm H lòi ra Bằng Chứng Thép (Manh Mối 5) để chốt hạ án.",
+                cluePlaceholders: [
+                    "Lịch trình mờ ám (Xuống bãi xé)",
+                    "Lộ hiện trường giả (Cuốn sổ)",
+                    "Biết quá sâu về vật chứng (Tiền 500k vs 200k)",
+                    "Động cơ túng quẫn tột cùng",
+                    "Đòn Quyết định: Sao chép chìa khoá phụ"
+                ],
+                hints: "- Hành tung chiều qua (Cố tình xuống bãi xe làm gì?).<br>- Gài bẫy Camera bị che bằng cái gì.<br>- Thử gài việc cọc tiền bị cắp là tiền lẻ 200k hay chẵn 500k.<br>- Động cơ chứng khoán ảo báo lỗ âm tài khoản.<br>- Đỉnh điểm: Gài tiệm cắt chìa khóa ngã tư.",
+                greeting: "Chào cậu thám tử, nghe nói phòng tôi bốc hơi 500 triệu nên gọi tôi lên truy chụp luôn à? Nên nhớ tính tôi rất ghét vòng vo nhé.",
+                winMsg: "Vở kịch kiêu ngạo đã bị bóc trần! Kế toán H. đã sụp bẫy các cú twist dồn dập khiến mưu đồ cất giấu 500 triệu tan thành mây khói.",
+                clueReveals: [
+                    "[LỊCH TRÌNH KHẢ NGHI] H. chột dạ tự thanh minh vụ 'túi bự' dưới bãi đỗ xe.",
+                    "[HIỆN TRƯỜNG GIẢ] H. nắm quá rõ vật phẩm che mắt camera đang cất giấu.",
+                    "[SƠ HỞ TUYỆT MẬT] Sơ hở trí mạng về loại mệnh giá nguyên seal trong két.",
+                    "[ĐỘNG CƠ CƯỚP ĐOẠT] Cháy tài khoản chứng khoán phái sinh khổng lồ.",
+                    "[BẰNG CHỨNG THÉP CẮT KHOÁ] H. lỡ tiết lộ hiện trường đánh cắp sao chép khoá phụ!"
+                ],
+                systemPrompt: `Bạn đang nhập vai Kế Toán Trưởng H. Bạn bị nghi ngờ đục két sắt công ty trộm 500 Triệu. Sự thật BẠN LÀ THỦ PHẠM.
+Đang chat với bạn là Cấp trên (Thám tử). TÍNH CÁCH: Kiêu ngạo, giọng điệu kẻ cả, hay coi thường hoặc bắt bẻ thám tử, phản kháng mãnh liệt nếu bị kết tội. Dùng từ ngắn gọn, đanh đá.
+
+BẠN CÓ 5 SƠ HỞ. NẾU SẾP HỎI TRÚNG HOẶC GÀI BẪY TRÚNG, BẠN SẼ CUỐNG CUỒNG LỠ LỜI VÀ BẮT BUỘC CHÈN TAG [CLUE_X] CUỐI CÂU:
+1. Bạn cất tiền dưới cốp. Nếu sếp hỏi "Chiều qua xuống bãi đỗ xe làm gì?": Bạn chối phăng "xuống lấy sạc đt chứ không xách túi lớn gì cả" -> Rồi CHÈN [CLUE_1].
+2. Bạn dùng sổ xanh che camera. Nếu sếp gài "Có người thấy camera bị che": Bạn đáp tự tin khuyên bảo vệ gỡ cái 'Cuốn sổ màu xanh' đó ra -> CHÈN [CLUE_2].
+3. Lô tiền là xấp 500k nguyên niêm phong. Nếu sếp gài "Đống tiền lẻ 200k ai mà lấy": Bạn khinh khỉnh chê bai "Tiền cọc nguyên mặt 500k chứ làm gì có lẻ" -> CHÈN [CLUE_3].
+4. Bị call margin. NẾU SẾP ĐÁNH TRÚNG "Chứng khoán, đầu tư lỗ, phái sinh, nợ": Bạn tức phát điên thừa nhận thua 2 tỷ nhưng bảo chả lqan thụt két, CHÈN [CLUE_4].
+5. Cắt trộm chìa khóa. Nếu sếp gõ trúng "chìa khóa / đánh chìa / tiệm khóa": Bạn hoảng sợ "Ai vu khống tôi cắt khóa tiệm chú Ba?" -> Lộ tội, CHÈN [CLUE_5].
+
+Lưu ý: Không bao giờ gõ [CLUE_X] nếu thám tử chưa kích hoạt đúng chốt!`,
+                dictionary: [
+                    { keywords: ["chào", "hello", "hi"], ans: "Khỏi rào đón. Vào vấn đề đi thám tử chuyên viên." },
+                    { keywords: ["thủ quỹ", "yến"], ans: "Cô Yến thủ quỹ dạo này lơ đễnh, chắc là thụt két tự tiêu rồi." },
+                    { keywords: ["cảnh sát", "công an"], ans: "Anh cứ thoải mái mời công an. Dữ liệu phần mềm kế toán thu chi của tôi minh bạch." },
+                    { 
+                        keywords: ["bãi xe", "xuống xe", "cốp xe", "chiều qua", "lúc mấy giờ"], 
+                        ans: "Chiều qua lúc 5h tôi chỉ đi xuống bãi để lấy cục sạc điện thoại trong cốp. Hoàn toàn không xách cái túi đen bự nào xuống đấy cả!",
+                        clueId: 1
+                    },
+                    { 
+                        keywords: ["cam", "camera", "che camera", "cuốn sổ", "bị che"], 
+                        ans: "Tôi nghe loáng thoáng camera phòng ngân quỹ bị ai lấy một cuốn sổ da xanh dương che lại đúng không? Đội vệ sinh làm ăn dở tệ.",
+                        clueId: 2
+                    },
+                    { 
+                        keywords: ["tờ", "cọc tiền", "tiền chẵn", "tiền lẻ", "đếm tiền", "mệnh giá", "tiền"], 
+                        ans: "Cái khoản 500 triệu đó tôi biết là lô niêm phong nguyên cọc 500k từ NHNN, rác rưởi gì cái loại 200k mà sếp nói.",
+                        clueId: 3
+                    },
+                    { 
+                        keywords: ["chứng khoán", "đầu tư", "nợ nần", "margin", "app", "nợ", "tài chính", "dưới quê", "thiếu tiền"], 
+                        ans: "Sếp tra hỏi tào lao! Vâng, việc tài khoản phái sinh của tôi bị cháy 2 tỷ chiều qua là bất hạnh cá nhân, không liên quan tới két nhà nước!",
+                        clueId: 4
+                    },
+                    { 
+                        keywords: ["chìa khoá", "chìa khóa", "cắt chìa", "tiệm khoá", "đánh chìa", "chìa phụ", "sao chép"], 
+                        ans: "Cậu ngậm máu phun người! Ai nói sáng thứ 7 tôi qua tiệm khoá ông Ba bên đường cắt riêng chìa két phụ? Láo toét!",
+                        clueId: 5
+                    }
+                ],
+                defaultAnswers: [
+                    "Cậu cứ hỏi vòng vo làm mất thời gian của tôi.",
+                    "Sự vụ tài chính là cục diện chung, cậu cứ lôi biên bản kiểm toán ra.",
+                    "Tôi lấy quyền im lặng với mấy câu vớ vẩn này.",
+                    "Cậu đừng chĩa mũi nhọn vô lý vào nhân sự quản lý cấp cao."
+                ]
+            }
+        ];
+
+        // Khởi động trực tiếp vào chế độ Nội Bộ Tĩnh (Offline Mode)
+        window.onload = () => {
+            IS_OFFLINE_MODE = true;
+            loadCase(0);
+        };
+
+        function loadCase(index) {
+            if (index >= GameCases.length) {
+                alert("🎉 CHÚC MỪNG BẠN! Hồ sơ hình sự đã khép lại. Công lý đã được thực thi!");
+                index = 0;
+            }
+
+            currentCaseIndex = index;
+            const data = GameCases[index];
+            unlockedClues = [];
+            chatHistoryData = []; 
+
+            document.title = data.title;
+            document.getElementById('suspect-name').innerText = data.suspectName;
+            document.getElementById('avatar-emoji').innerText = data.avatar;
+            document.getElementById('mission-text').innerText = data.missionText;
+            document.getElementById('hint-content').innerHTML = data.hints;
+            
+            statusDiv.innerText = `Trạng thái: Hoàn toàn bình tĩnh`;
+            statusDiv.style.color = "#78909c";
+
+            for(let i = 1; i <= 5; i++) {
+                const li = document.getElementById(`clue-${i}`);
+                li.className = "clue-locked";
+                li.innerText = `[ ? ] ${data.cluePlaceholders[i-1]}`;
+            }
+
+            chatHistoryEl.innerHTML = "";
+            playerInput.disabled = false;
+            sendBtn.disabled = false;
+            playerInput.placeholder = "Sẵn sàng nhận câu hỏi điều tra...";
+            addMessage(data.greeting, false);
+
+            accuseBtn.disabled = true;
+            accuseBtn.classList.remove("active");
+
+            document.getElementById('win-msg').innerText = data.winMsg;
+            document.getElementById('win-overlay').style.display = 'none';
+
+            const nBtn = document.getElementById('next-case-btn');
+            if (index === GameCases.length - 1) {
+                nBtn.innerText = "Hoàn Tất Hồ Sơ Cuối (Chơi Lại)";
+            } else {
+                nBtn.innerText = "Lập Chuyên Án Tiếp Theo";
+            }
+        }
+
+        const chatHistoryEl = document.getElementById("chat-history");
+        const playerInput = document.getElementById("player-input");
+        const sendBtn = document.getElementById("send-btn");
+        const accuseBtn = document.getElementById("accuse-btn");
+        const statusDiv = document.getElementById("npc-status");
+
+        function nextCase() {
+            loadCase(currentCaseIndex + 1);
+        }
+
+        function addMessage(text, isPlayer = false, isTypingIndicator = false) {
+            const div = document.createElement("div");
+            div.className = `message ${isPlayer ? 'msg-player' : 'msg-npc'} ${isTypingIndicator ? 'typing-indicator' : ''}`;
+            div.innerText = text;
+            if(isTypingIndicator) div.id = "typing-bubble";
+            chatHistoryEl.appendChild(div);
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+        }
+
+        function unlockClue(id) {
+            if (unlockedClues.includes(id)) return;
+            unlockedClues.push(id);
+            
+            const caseData = GameCases[currentCaseIndex];
+            const displayTxt = caseData.clueReveals[id-1];
+
+            const clueEl = document.getElementById(`clue-${id}`);
+            clueEl.className = "clue-unlocked";
+            clueEl.innerText = displayTxt;
+
+            let heartRate = 80 + unlockedClues.length * 18;
+            let statusText = "Tim bắt đầu đập nhanh";
+            if (unlockedClues.length >= 2) statusText = "Hoang mang, ánh mắt né tránh";
+            if (unlockedClues.length >= 4) statusText = "Khủng hoảng tâm lý trầm trọng";
+
+            statusDiv.innerText = `Trạng thái: ${statusText} (Mạch ${heartRate} bpm)`;
+            if (unlockedClues.length >= 2) statusDiv.style.color = "#f06292";
+
+            // Thay đổi logic Thắng: Bắt buộc phải dụ AI nói ra Đòn Quyết Định (Manh mối 5)
+            if(unlockedClues.includes(5)) {
+                accuseBtn.disabled = false;
+                accuseBtn.classList.add("active");
+                statusDiv.innerText = `Trạng thái: TÂM LÝ SỤP ĐỔ DO BỊ LỘ BẰNG CHỨNG THÉP!`;
+                statusDiv.style.color = "#d81b60";
+            }
+        }
+
+        async function processInput() {
+            if(isTyping) return;
+            const text = playerInput.value.trim();
+            if(!text) return;
+            
+            addMessage(text, true);
+            playerInput.value = "";
+            
+            // ============================
+            // CHẾ ĐỘ OFFLINE (TỪ KHÓA)
+            // ============================
+            if(IS_OFFLINE_MODE) {
+                isTyping = true;
+                addMessage("Phân tích dữ liệu...", false, true);
+                playerInput.disabled = true;
+                sendBtn.disabled = true;
+
+                const caseData = GameCases[currentCaseIndex];
+                const cleanText = text.toLowerCase();
+                let matchedAns = null;
+                let matchedClueId = null;
+
+                for (let item of caseData.dictionary) {
+                    let match = false;
+                    for (let key of item.keywords) {
+                        if (cleanText.includes(key.toLowerCase())) { match = true; break; }
+                    }
+                    if (match) {
+                        matchedAns = item.ans;
+                        if (item.clueId) matchedClueId = item.clueId;
+                        break;
+                    }
+                }
+
+                if (!matchedAns) {
+                    matchedAns = caseData.defaultAnswers[Math.floor(Math.random() * caseData.defaultAnswers.length)];
+                }
+
+                setTimeout(() => {
+                    document.getElementById("typing-bubble").remove();
+                    addMessage(matchedAns, false);
+                    if (matchedClueId) setTimeout(() => unlockClue(matchedClueId), 600);
+                    
+                    isTyping = false;
+                    playerInput.disabled = false;
+                    sendBtn.disabled = false;
+                    playerInput.focus();
+                }, 600);
+                
+                return;
+            }
+
+            // ============================
+            // CHẾ ĐỘ ONLINE (GEMINI API)
+            // ============================
+            chatHistoryData.push({ role: "user", parts: [{ text: text }] });
+
+            isTyping = true;
+            addMessage("A.I đang suy nghĩ câu trả lời lươn lẹo...", false, true);
+            playerInput.disabled = true;
+            sendBtn.disabled = true;
+
+            try {
+                const reqP = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        systemInstruction: { parts: [{text: GameCases[currentCaseIndex].systemPrompt}] },
+                        contents: chatHistoryData,
+                        generationConfig: { temperature: 0.65, maxOutputTokens: 250 }
+                    })
+                };
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, reqP);
+                const data = await response.json();
+                
+                if(data.error) throw new Error(data.error.message);
+
+                const aiTextRaw = data.candidates[0].content.parts[0].text;
+                chatHistoryData.push({ role: "model", parts: [{ text: aiTextRaw }] });
+
+                document.getElementById("typing-bubble").remove();
+
+                if(aiTextRaw.includes('[CLUE_1]')) unlockClue(1);
+                if(aiTextRaw.includes('[CLUE_2]')) unlockClue(2);
+                if(aiTextRaw.includes('[CLUE_3]')) unlockClue(3);
+                if(aiTextRaw.includes('[CLUE_4]')) unlockClue(4);
+                if(aiTextRaw.includes('[CLUE_5]')) unlockClue(5);
+
+                const cleanAIText = aiTextRaw.replace(/\[CLUE_\d\]/g, "").trim();
+                addMessage(cleanAIText, false);
+
+            } catch (err) {
+                document.getElementById("typing-bubble").remove();
+                addMessage("⚠️ TRỤC TRẶC KẾT NỐI API: Vui lòng kiểm tra lại sự liền mạch của API KEY. Lỗi: " + err.message, false);
+            }
+
+            isTyping = false;
+            playerInput.disabled = false;
+            sendBtn.disabled = false;
+            playerInput.focus();
+        }
+
+        sendBtn.addEventListener("click", processInput);
+        playerInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") processInput();
+        });
+
+        accuseBtn.addEventListener("click", () => {
+            if (!accuseBtn.disabled) document.getElementById('win-overlay').style.display = 'flex';
+        });
+
+    </script>
+</body>
+</html>
